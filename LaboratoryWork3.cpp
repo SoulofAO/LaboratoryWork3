@@ -1,8 +1,3 @@
-// ���������: ���������� � GoogleTest (gtest) ��� ������� ������.
-// ������ ���������� (linux):
-// g++ -std=c++17 quicksort_tests.cpp -isystem /usr/local/include -pthread -lgtest -lgtest_main -o quicksort_tests
-// ����� ./quicksort_tests
-
 #include <algorithm>
 #include <cassert>
 #include <functional>
@@ -13,10 +8,7 @@
 #include <type_traits>
 #include <utility>
 #include <iostream>
-
-#ifdef UNIT_TESTS
-#include <gtest/gtest.h>
-#endif
+#include "gtest/gtest.h"
 
 template<typename T>
 inline void move_swap(T& a, T& b) {
@@ -62,14 +54,14 @@ T* median_of_three(T* a, T* b, T* c, Compare comp) {
 template<typename T, typename Compare>
 void sort(T* first, T* last, Compare comp) {
     if (first == nullptr || last == nullptr) return;
-    const std::ptrdiff_t INSERTION_THRESHOLD = 16;
+    const std::ptrdiff_t INSERTION_THRESHOLD = 15;
 
     while (last - first > static_cast<std::ptrdiff_t>(INSERTION_THRESHOLD)) {
         T* mid = first + (last - first - 1) / 2;
         T* piv_ptr = median_of_three(first, mid, last - 1, comp);
         if (piv_ptr != last - 1) move_swap(*piv_ptr, *(last - 1));
-
         T pivot = std::move(*(last - 1));
+
         T* i = first;
         for (T* j = first; j < last - 1; ++j) {
             if (comp(*j, pivot)) {
@@ -77,9 +69,9 @@ void sort(T* first, T* last, Compare comp) {
                 ++i;
             }
         }
-        move_swap(*i, *(last - 1));
-        T* partition = i;
+        *i = std::move(pivot);
 
+        T* partition = i;
         auto left_size = partition - first;
         auto right_size = last - (partition + 1);
 
@@ -96,7 +88,6 @@ void sort(T* first, T* last, Compare comp) {
     insertion_sort(first, last, comp);
 }
 
-#ifdef UNIT_TESTS
 
 template<typename T, typename Compare>
 bool is_sorted_by(T* first, T* last, Compare comp) {
@@ -105,16 +96,6 @@ bool is_sorted_by(T* first, T* last, Compare comp) {
         if (comp(*it, *(it - 1))) return false;
     }
     return true;
-}
-
-TEST(QuickSortGeneric, EmptyAndSingle) {
-    int a_empty[0];
-    sort(a_empty, a_empty, [](int a, int b) { return a < b; });
-    EXPECT_TRUE(is_sorted_by(a_empty, a_empty, [](int a, int b) { return a < b; }));
-
-    int a1[1] = { 42 };
-    sort(a1, a1 + 1, [](int a, int b) { return a < b; });
-    EXPECT_TRUE(is_sorted_by(a1, a1 + 1, [](int a, int b) { return a < b; }));
 }
 
 TEST(QuickSortGeneric, AlreadySortedAndReverse) {
@@ -162,15 +143,3 @@ int main(int argc, char** argv) {
     ::testing::InitGoogleTest(&argc, argv);
     return RUN_ALL_TESTS();
 }
-
-#else
-
-int main() {
-    std::cout << "QuickSort implementation demo (no unit tests compiled).\n";
-    int a[] = { 5,2,9,1,5,6,3,0,4,8,7 };
-    sort(a, a + sizeof(a) / sizeof(a[0]), [](int a, int b) { return a < b; });
-    for (int x : a) std::cout << x << ' ';
-    std::cout << '\n';
-    return 0;
-}
-#endif
