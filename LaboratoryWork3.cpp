@@ -12,8 +12,10 @@
 #include <type_traits>
 #include <utility>
 #include <vector>
-#include <cmath>       // для std::round
-#include <cctype>      // для std::tolower
+#include <cmath>      
+#include <cctype>      
+#include "gtest/gtest.h"
+
 
 template<typename T>
 inline void MoveSwap(T& A, T& B) {
@@ -272,6 +274,56 @@ std::string QuoteArg(const std::string& Arg) {
     }
     Out.push_back('"');
     return Out;
+}
+
+template<typename T, typename Compare>
+bool is_sorted_by(T* first, T* last, Compare comp) {
+    if (first == last) return true;
+    for (T* it = first + 1; it < last; ++it) {
+        if (comp(*it, *(it - 1))) return false;
+    }
+    return true;
+}
+
+TEST(QuickSortGeneric, AlreadySortedAndReverse) {
+    int asc[10];
+    for (int i = 0; i < 10; ++i) asc[i] = i;
+    QuickHybridSort(asc, asc + 10, [](int a, int b) { return a < b; });
+    EXPECT_TRUE(is_sorted_by(asc, asc + 10, [](int a, int b) { return a < b; }));
+
+    int desc[10];
+    for (int i = 0; i < 10; ++i) desc[i] = 10 - i;
+    QuickHybridSort(desc, desc + 10, [](int a, int b) { return a < b; });
+    EXPECT_TRUE(is_sorted_by(desc, desc + 10, [](int a, int b) { return a < b; }));
+}
+
+TEST(QuickSortGeneric, Duplicates) {
+    int dup[12] = { 5,1,5,5,2,2,5,1,1,2,5,5 };
+    QuickHybridSort(dup, dup + 12, [](int a, int b) { return a < b; });
+    EXPECT_TRUE(is_sorted_by(dup, dup + 12, [](int a, int b) { return a < b; }));
+}
+
+TEST(QuickSortGeneric, RandomLarge) {
+    const int N = 1000;
+    std::vector<int> v(N);
+    std::mt19937 rng(12345);
+    std::uniform_int_distribution<int> dist(-1000, 1000);
+    for (int i = 0; i < N; ++i) v[i] = dist(rng);
+    QuickHybridSort(v.data(), v.data() + v.size(), [](int a, int b) { return a < b; });
+    EXPECT_TRUE(std::is_sorted(v.begin(), v.end()));
+}
+
+struct Item {
+    int key;
+    std::string name;
+    Item() : key(0), name() {}
+    Item(int k, const std::string& s) : key(k), name(s) {}
+};
+
+TEST(QuickSortGeneric, NonTrivialType) {
+    Item arr[6] = { {3,"a"}, {1,"b"}, {4,"c"}, {1,"d"}, {2,"e"}, {0,"f"} };
+    QuickHybridSort(arr, arr + 6, [](const Item& a, const Item& b) { return a.key < b.key; });
+    EXPECT_TRUE(is_sorted_by(arr, arr + 6, [](const Item& a, const Item& b) { return a.key < b.key; }));
 }
 
 static const std::size_t DefaultMinN = 4;
