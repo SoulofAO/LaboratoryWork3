@@ -13,7 +13,11 @@
 #include <utility>
 #include <vector>
 #include <cmath>      
-#include <cctype>      
+#include <cctype>
+#include <functional>
+#include <cstddef>
+#include <vector>
+#include <numeric>
 #include "gtest/gtest.h"
 
 
@@ -211,6 +215,7 @@ double TimeQuickWorstCase(std::size_t N, std::size_t NumRepeats) {
     for (std::size_t I = 0; I < N; ++I) {
         Base.push_back(static_cast<int>(N - I));
     }
+    MakeMedianOfThreeKiller(N);
     double Total = 0.0;
     for (std::size_t R = 0; R < NumRepeats; ++R) {
         std::vector<int> Arr = Base;
@@ -242,6 +247,50 @@ std::string BuildCoordsString(const std::vector<std::size_t>& Sizes, const std::
     Oss << "]";
     return Oss.str();
 }
+
+std::vector<int> MakeMedianOfThreeKiller(std::size_t N) {
+    std::vector<int> Result(N, 0);
+    std::vector<std::size_t> Positions(N);
+    std::iota(Positions.begin(), Positions.end(), 0u);
+
+    int Low = 1;                      
+    int High = static_cast<int>(N);   
+
+    std::function<void(const std::vector<std::size_t>&)> Build;
+    Build = [&](const std::vector<std::size_t>& P) -> void {
+        std::size_t m = P.size();
+        if (m == 0) return;
+        if (m == 1) {
+            Result[P[0]] = Low++;
+            return;
+        }
+        if (m == 2) {
+            Result[P[0]] = Low++;
+            Result[P[1]] = Low++;
+            return;
+        }
+        std::size_t First = P.front();
+        std::size_t Mid = P[m / 2];
+        std::size_t Last = P.back();
+
+        Result[First] = Low++;
+        Result[Mid] = Low++;
+        Result[Last] = High--;
+
+        std::vector<std::size_t> Rem;
+        Rem.reserve(m > 3 ? m - 3 : 0);
+        for (std::size_t i = 0; i < m; ++i) {
+            std::size_t pos = P[i];
+            if (pos == First || pos == Mid || pos == Last) continue;
+            Rem.push_back(pos);
+        }
+        Build(Rem);
+        };
+
+    Build(Positions);
+    return Result;
+}
+
 
 bool EndsWithIgnoreCase(const std::string& Str, const std::string& Suffix) {
     if (Str.size() < Suffix.size()) {
